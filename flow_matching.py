@@ -13,7 +13,6 @@ from torchcfm.optimal_transport import OTPlanSampler
 from torchcfm.utils import *
 from torchdyn.core import NeuralODE
 from torchdyn.datasets import generate_adjacent_moons, generate_moons
-from sklearn.cluster import KMeans
 
 savedir = "models/8gaussian-moons"
 os.makedirs(savedir, exist_ok=True)
@@ -72,7 +71,7 @@ sigma = 0.1
 dim = 2
 batch_size = 256
 model = MLP(dim=dim, time_varying=True)
-optimizer = torch.optim.Adam(model.parameters())
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4) # Learning rate for the optimizer
 FM = ConditionalFlowMatcher(sigma=sigma)
 
 start = time.time()
@@ -82,11 +81,6 @@ for k in range(20000):
 
     x0 = sample_1gaussian(batch_size)  # Sample from a single Gaussian
     x1 = sample_8gaussians(batch_size)  # Target distribution is a set of moons
-
-    kmeans = KMeans(n_clusters=8, random_state=0, n_init="auto").fit(x1)
-    x1 = torch.tensor(kmeans.cluster_centers_).float()  # Use cluster centers as target
-    plt.scatter(x1[:, 0].cpu().numpy(), x1[:, 1].cpu().numpy(), c="red", s=100, label="Target centers")
-    plt.scatter(x0[:, 0].cpu().numpy(), x0[:, 1].cpu().numpy(), c="blue", s=10, label="Source samples")
 
     # Draw samples from OT plan
     x0, x1 = ot_sampler.sample_plan(x0, x1)
