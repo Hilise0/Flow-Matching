@@ -4,13 +4,15 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-#import ot as pot
+
+# import ot as pot
 import torch
 import torchdyn
 from sklearn.cluster import KMeans
 from torchcfm.conditional_flow_matching import *
 from torchcfm.models.models import *
-#from torchcfm.optimal_transport import OTPlanSampler
+
+# from torchcfm.optimal_transport import OTPlanSampler
 from torchcfm.utils import *
 from torchdyn.core import NeuralODE
 from torchdyn.datasets import generate_adjacent_moons, generate_moons
@@ -19,6 +21,7 @@ savedir = "models/8gaussian-moons"
 os.makedirs(savedir, exist_ok=True)
 
 # --------- Sample conditional points for one cluster, Eq(14) --------- #
+
 
 def sample_conditional_pt_1cluster(x0, x1, t, sigma, x0_label, x1_label, cluster):
     t = t.reshape(-1, *([1] * (x0.dim() - 1)))
@@ -42,6 +45,7 @@ def sample_conditional_pt_1cluster(x0, x1, t, sigma, x0_label, x1_label, cluster
 
 # -- Compute the conditional vector field ut(x1|x0) = x1 - x0, Eq(15) -- #
 
+
 def compute_conditional_vector_field_1cluster(x0, x1, x0_label, x1_label, cluster):
     x0 = x0[x0_label == cluster]
     x1 = x1[x1_label == cluster]
@@ -55,6 +59,7 @@ def compute_conditional_vector_field_1cluster(x0, x1, x0_label, x1_label, cluste
 
 
 # ----------------------- Plotting Trajectories ------------------------ #
+
 
 def my_plot_trajectories(fig, traj, colors):
     """Plot trajectories of some selected samples on a given figure."""
@@ -73,6 +78,7 @@ def my_plot_trajectories(fig, traj, colors):
 
 
 # --------------------- Sample 1 quarter of Gaussian ---------------- #
+
 
 def sample_1gaussian_quarter(n, cluster=0, total_clusters=8):
     """
@@ -94,7 +100,7 @@ def sample_1gaussian_quarter(n, cluster=0, total_clusters=8):
 
 # ------------------------------ Main core ------------------------------ #
 
-#ot_sampler = OTPlanSampler(method="exact")
+# ot_sampler = OTPlanSampler(method="exact")
 sigma = 0.1
 dim = 2
 batch_size = 256
@@ -131,14 +137,15 @@ plt.ylim(-3, 3)
 plt.legend()
 plt.grid()
 
-for k in range(16000):
+epoch = 20000  # Number of epochs to train
+
+for k in range(epoch):
     optimizer.zero_grad()
 
     x0 = sample_1gaussian(batch_size)  # Sample from a single Gaussian
     x1 = sample_8gaussians(batch_size)  # Target distribution is a set of moons
 
     kmeans = KMeans(n_clusters=8, random_state=0, n_init="auto").fit(x1)
-    #x1 = torch.tensor(kmeans.cluster_centers_).float()  # Use cluster centers as target
 
     # plt.scatter(x1[:, 0].cpu().numpy(), x1[:, 1].cpu().numpy(), c="red", s=100, label="Target centers")
     # plt.scatter(x0[:, 0].cpu().numpy(), x0[:, 1].cpu().numpy(), c="blue", s=10, label="Source samples")
@@ -157,10 +164,9 @@ for k in range(16000):
 
     x0_label = kmeans.predict(x0)
     x1_label = kmeans.predict(x1)
-     #print("x1 label", x1_label)
+    # print("x1 label", x1_label)
 
-    
-    x1_label = np.random.randint(0,7, size=(256,))  # Randomly assign labels to x1
+    x1_label = np.random.randint(0, 7, size=(256,))  # Randomly assign labels to x1
 
     t = torch.rand(x0.shape[0]).type_as(x0)  # Uniformly sample t in [0, 1]
 
@@ -208,14 +214,14 @@ for k in range(16000):
                 )
                 # Plot the trajectory
                 my_plot_trajectories(fig, traj.cpu().numpy(), colors=color_list[i])
-                plt.title(f"Trajectories at iteration {k + 1}")
+                plt.title(f"Trajectories with random assignments at iteration {k + 1}")
                 plt.xlabel("X-axis")
                 plt.ylabel("Y-axis")
             traj = node.trajectory(
                 sample_1gaussian(1024),
                 t_span=torch.linspace(0, 1, 100),
             )
-            plot_trajectories(traj.cpu().numpy())
+            # plot_trajectories(traj.cpu().numpy())
             fig.savefig(f"{savedir}/trajectory_{k}.png")
             # plt.savefig(f"../Figures_Flow_Matching/trajectory_8gaussian_{k}_20000epoch.png")
 
